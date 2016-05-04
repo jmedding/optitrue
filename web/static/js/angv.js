@@ -6,7 +6,7 @@ export var AngV = {
   lastFrameTime: 0,
   vid: null,  
   aoi: null,  //area of interest
-  aoiCoords: {"x": 600, "y": 490, "w": 90, "h": 20},
+  aoiCoords: {"x": 600, "y": 490, "w": 90, "h": 10},
   frameRate: 1.0/30,
 
   init: function(){
@@ -67,7 +67,7 @@ export var AngV = {
         g = data[x+1];
         b = data[x+2];
 
-        avg = Math.floor((r+g)/3);
+        avg = Math.floor((r+g-b)/3);
         colorSum += avg;
     }
     return colorSum / (canvas.height*canvas.width);
