@@ -1,10 +1,12 @@
-<video id="videoElement" width="320" height="180" autoplay="true">
+<div id="videoContainer">
+  <video id="videoElement" ></video>
+  <svg id="svgContainer"></svg>
+  
+</div>
 
-</video>
 
-
-<canvas id="aoi" width="640" height="360"></canvas>
 <canvas id="chart" width="640" height="50"></canvas>
+<canvas id="aoi" width="640" height="360"></canvas>
 
 
 <div class="row marketing">

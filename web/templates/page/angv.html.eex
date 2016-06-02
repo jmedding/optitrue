@@ -3,8 +3,8 @@
 </video>
 
 
-<canvas id="aoi" width="640" height="360"></canvas>
 <canvas id="chart" width="640" height="50"></canvas>
+<canvas id="aoi" width="640" height="360"></canvas>
 
 
 <div class="row marketing">
@@ -39,4 +39,11 @@
   </div>
 </div>
 
-<script>require("web/static/js/angv").AngV.init()</script>
+<script>
+  var vid = document.getElementById('source'); 
+  var AngV = require("web/static/js/angv").AngV
+  AngV.init(vid, 0.5, 0.1, 0.8, true, true);
+  console.log("fr", AngV.frameRate);
+  vid.addEventListener('play', AngV.start());
+  vid.addEventListener('stop', AngV.stop());
+</script>

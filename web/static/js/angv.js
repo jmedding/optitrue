@@ -1,61 +1,95 @@
-import {StreamStat} from "web/static/js/stat";
+import {StreamStat} from "web/static/js/stat2";
+import {Chart} from "web/static/js/chart";
 
 export var AngV = {
-
-  colorTracker: new tracking.ColorTracker(['yellow']),
+  interval: null,
   lastFrameTime: 0,
   vid: null,  
-  aoi: null,  //area of interest
-  aoiCoords: {"x": 600, "y": 490, "w": 90, "h": 10},
+  aoi: null,  //canvas used to paint the area of interest - where to scan for the tape
   frameRate: 1.0/30,
+  aoiRect: {"x": 600, "y": 490, "w": 90, "h": 10},  //to be updated
+  aoiPosition: {top: 0.5, left: 0.47, right: 0.53, height: 0.02},
+  tireRect: {"x": 0, "y": 0, "w": 0, "h": 0},  //to be updated
+  startTime: null,
 
-  init: function(){
+  // top, left, right describe the region in percentage where the wheel is expected to be
+  // corresponding to the guideline drawn on the video
+  init: function(vid, top, left, right, debug, showCharts){
     var self = this;
-    var rect = this.aoiCoords;
-    if (tracking) console.log("AngV found tracker");
-    if (jsfeat) console.log("AngV found jsfeat");
-    this.vid = document.getElementById('source');
-    if (this.vid.videoHeight == 0) {
+    var aoiCtx;
+
+    self. debug = !!debug;
+    self.showCharts = !!showCharts;
+    self.stat = new StreamStat();
+
+    if (debug){
+      if (tracking) console.log("AngV found tracker");
+      if (jsfeat) console.log("AngV found jsfeat");
+    }
+
+    self.vid = vid;
+    if (self.vid.videoHeight == 0) {
       //vidoe metadata not yet loaded
-      this.vid.addEventListener('loadedmetadata', function(e){
+      self.vid.addEventListener('loadedmetadata', function(e){
         //console.log("metadata loaded", e);
-        self.init();
+        self.init(vid, top, left, right, debug, showCharts);
       });
       return      
     };
 
-    this.aoi = document.getElementById('aoi');
-    this.aoi.width = rect.w;
-    this.aoi.height = rect.h;
-    if (true) this.chart = new Chart(
+    self.tireRect = rectangleFromVideoElement(vid, left, right, top);
+    self.aoi = findOrSetAoiCanvas(self);
+    self.aoiRect.x = self.tireRect.x + self.tireRect.w * self.aoiPosition.left;
+    self.aoiRect.y = self.tireRect.y + self.tireRect.h * self.aoiPosition.top;
+    self.aoiRect.w = self.aoi.width;
+    self.aoiRect.h = self.aoi.height;
+
+    //console.log("showCharts", vid, top, left, right, debug, showCharts);
+
+    if (showCharts) self.chart = new Chart(
       document.getElementById('chart')
       .getContext('2d'), 30, 0.4, {"xOrigin": 'left', "yOrigin":'bottom', "line":false});
-    console.log("Hello!", this.vid, this.vid.videoHeight, rect.y, this.aoi); 
-
-    this.colorTracker.on('track', function(e){
-      if (this.lastFrameTime != self.vid.currentTime){
-        console.log("tracking", e);
-        
-      } 
-    });
-    window.setInterval(this.run, this.frameRate * 1000, this);
-    tracking.track('#aoi', this.colorTracker);
+    //return self.interval = window.setInterval(self.run, self.frameRate * 1000, self, aoiCtx);
   },
 
-  run: function (self) {
+  start: function () {
+      self = this;
+      return function () {
+        console.log("starting");
+        self.stat = new StreamStat();
+        self.startTime = self.vid.currentTime;
+        if (self.showCharts) self.chart.reset();
+        self.interval = window.setInterval(self.run, self.frameRate * 1000, self, self.aoi.getContext('2d'));
+        
+      }
+  },
+
+  stop: function () {
+      window.clearInterval(this.interval);
+      this.interval = null;
+  },
+
+  run: function (self, ctx) {
     if (self.lastFrameTime == self.vid.currentTime) return;
-    var ctx, val;
-    var rect = self.aoiCoords;
+    if (self.debug) console.log("run", self.vid.currentTime);
+    var val;
+    
+    var rect = self.aoiRect;
     ctx = self.aoi.getContext('2d');
     ctx.drawImage(self.vid, rect.x, rect.y, rect.w, rect.h, 0, 0, rect.w, rect.h);
     self.lastFrameTime = self.vid.currentTime;
-    val = self.getBrightness(ctx);
-    //console.log("getBrightness", val);
-    var outlier = StreamStat.outlier(val);
-    self.chart.plot(self.lastFrameTime, val, outlier)
+    val = getBrightness(ctx);
+
+    var outlier = self.stat.outlier(val);
+    if (self.showCharts){
+      var time = self.lastFrameTime - self.startTime;
+      self.chart.plot(time, val, outlier)
+    } 
   },
 
-  getBrightness: function (ctx) {
+}
+
+function  getBrightness (ctx) {
     var canvas = ctx.canvas;
     var imageData = ctx.getImageData(0,0,canvas.width,canvas.height);
     var data = imageData.data;
@@ -67,58 +101,29 @@ export var AngV = {
         g = data[x+1];
         b = data[x+2];
 
+        //optimized for yellow
         avg = Math.floor((r+g-b)/3);
         colorSum += avg;
     }
+    //not sure we really need to divide by the area, it is always the same
     return colorSum / (canvas.height*canvas.width);
   }
+
+function rectangleFromVideoElement (vid, left, right, top) {
+  var rect = {};
+  rect.x = vid.videoWidth * left;
+  rect.y = vid.videoHeight * top;
+  rect.w = vid.videoWidth * (right - left);
+  rect.h = vid.videoHeight - rect.y;
+  return rect;
 }
 
-var Chart = function (ctx, scaleX=1, scaleY=1, options={}) {
-  this.ctx = ctx;
-  this.scaleX = scaleX;
-  this.scaleY = scaleY;
-  this.width = ctx.canvas.width;
-  this.height = ctx.canvas.height;
-  this.last = null;
-  this.xOffset = this.width/2;
-  this.yOffset = this.height/2;
-  this.options = options;
-  this.points = 0;
-  this.init();
+function findOrSetAoiCanvas (self) {
+  var aoiCanvas = self.debug ? 
+    document.getElementById('aoi') : document.createElement('canvas');
+  aoiCanvas.width = self.tireRect.w * (self.aoiPosition.right - self.aoiPosition.left);
+  aoiCanvas.height = self.tireRect.h * self.aoiPosition.height;
+  return aoiCanvas;
 }
 
-Chart.prototype.init = function (){
-  console.log("chart", this);
-  if (this.options.xOrigin == 'left') this.xOffset = 0;
-  if (this.options.yOrigin == 'bottom') this.yOffset = this.height;
-  this.ctx.fillStyle = 'wheat';
-  this.ctx.fillRect(0,0, this.width, this.height);
-  this.ctx.strokeStyle = 'grey';
-  this.ctx.moveTo(this.xOffset, 0);
-  this.ctx.lineTo(this.xOffset, this.height);
-  this.ctx.moveTo(0, this.yOffset);
-  this.ctx.lineTo(this.width, this.yOffset);
-  this.ctx.stroke();
-};
-
-Chart.prototype.plot = function (x,y, special) {
-  if (this.options.line && this.last) {
-    this.ctx.strokeStyle = 'darkgrey';
-    this.ctx.moveTo(this.xOffset + this.scaleX*this.last.x, this.yOffset - this.scaleY*this.last.y);
-    this.ctx.lineTo(this.xOffset + this.scaleX*x, this.yOffset - this.scaleY*y);
-    this.ctx.stroke();
-  }
-
-  this.ctx.fillStyle = 'black';
-  this.ctx.fillRect(this.xOffset + this.scaleX*x, this.yOffset - this.scaleY*y,1,1);
-  this.last = {"x": x, "y": y};
-  if (special) {
-    console.log("Outlier", x, y);
-    this.ctx.fillStyle = 'blue';
-    this.ctx.fillRect(this.xOffset - 1 + this.scaleX*x, this.yOffset -1 - this.scaleY*y,3,3);
-  }
-  //this.points++;
-  //console.log("points", this.points, x, y);
-}
 

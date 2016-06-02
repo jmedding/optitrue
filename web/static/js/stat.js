@@ -5,11 +5,13 @@ export var StreamStat = {
   minPoints: 5,
   last5: [],
   sumLast5: 0,
-  varianceFactor: 9,  //take the sqrt to relate it to stdev
+  varianceFactor: 100,  //take the sqrt to relate it to stdev
 
   outlier: function (val) {
-    if (this.n > this.minPoints && this.check(val)) {
+    if (this.last5.length >= this.minPoints && this.check(val)) {
       //it's an outlier, don't add this val to the stats
+      this.last5 = [];
+      this.sumLast5 = 0;
       return true;
     } else {
       //it's normal, or we don't have enough points yet - use the data
@@ -30,7 +32,7 @@ export var StreamStat = {
     this.n++;
     this.last5.push(val);
     this.sumLast5 += val;
-    if (this.last5.length > 2) this.sumLast5 -= this.last5.shift();
+    if (this.last5.length > 5) this.sumLast5 -= this.last5.shift();
   },
 
   check: function(val) {
