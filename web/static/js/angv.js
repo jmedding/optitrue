@@ -1,5 +1,7 @@
 import {StreamStat} from "web/static/js/stat2";
 import {Chart} from "web/static/js/chart";
+import {Events} from "web/static/js/events";
+import {AngD} from "web/static/js/angd";
 
 export var AngV = {
   interval: null,
@@ -21,6 +23,8 @@ export var AngV = {
     self. debug = !!debug;
     self.showCharts = !!showCharts;
     self.stat = new StreamStat();
+
+    AngD.init();
 
     if (debug){
       if (tracking) console.log("AngV found tracker");
@@ -56,6 +60,7 @@ export var AngV = {
       self = this;
       return function () {
         console.log("starting");
+        Events.publish('test', "starting");
         self.stat = new StreamStat();
         self.startTime = self.vid.currentTime;
         if (self.showCharts) self.chart.reset();
