@@ -24,14 +24,14 @@ export var AngV = {
     self.showCharts = !!showCharts;
     self.stat = new StreamStat();
 
-    AngD.init();
 
     if (debug){
       if (tracking) console.log("AngV found tracker");
       if (jsfeat) console.log("AngV found jsfeat");
     }
-
+    
     self.vid = vid;
+    
     if (self.vid.videoHeight == 0) {
       //vidoe metadata not yet loaded
       self.vid.addEventListener('loadedmetadata', function(e){
@@ -40,6 +40,8 @@ export var AngV = {
       });
       return      
     };
+    
+    AngD.init();
 
     self.tireRect = rectangleFromVideoElement(vid, left, right, top);
     self.aoi = findOrSetAoiCanvas(self);
@@ -57,9 +59,8 @@ export var AngV = {
   },
 
   start: function () {
-      self = this;
+      var self = this;
       return function () {
-        console.log("starting");
         Events.publish('test', "starting");
         self.stat = new StreamStat();
         self.startTime = self.vid.currentTime;
@@ -86,10 +87,12 @@ export var AngV = {
     val = getBrightness(ctx);
 
     var outlier = self.stat.outlier(val);
+    var time = self.lastFrameTime - self.startTime;
+
+    if (outlier) Events.publish('sighting', time);
     if (self.showCharts){
-      var time = self.lastFrameTime - self.startTime;
       self.chart.plot(time, val, outlier)
-    } 
+    }
   },
 
 }

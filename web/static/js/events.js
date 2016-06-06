@@ -25,6 +25,8 @@ export var Events = (function(){
       topics[topic].forEach(function(item) {
           item(info != undefined ? info : {});
       });
-    }
+    },
+
+    inspect: function() {return topics;}
   };
 })();

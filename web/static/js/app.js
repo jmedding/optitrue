@@ -22,4 +22,4 @@ import "phoenix_html"
 
 //import "web/static/js/tracking"
 
-import "web/static/js/angv"
+//import "web/static/js/angv"
