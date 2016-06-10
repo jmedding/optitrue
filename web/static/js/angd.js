@@ -3,12 +3,20 @@ import {Solver} from "web/static/js/solver";
 
 export var AngD = {
   sightings: [], //{time, rev},
-  params: null,
+  calcFunc: null,
 
   init: function () {
     var self = this;
     Events.subscribe('test', function (e) {console.log("received", e);})
     Events.subscribe('sighting', handle_crossing(self));
+    Events.subscribe('angD_func_updated', function(calcFunc) {
+      self.calcFunc = calcFunc;
+    })
+  },
+
+  reset: function () {
+    this.sightings = [];
+    this.calcFunc = null;
   }
 }
 
@@ -16,28 +24,41 @@ function handle_crossing(angd) {
   return function(time) {
     // time is in seconds and corresponds to video time
     var update =  {};
-    angd.sightings = log_sighting(angd.sightings, time);
+    angd.sightings = log_sighting(angd.sightings, time, angd.calcFunc);
     console.log("sightings", angd.sightings);
 
     if (angd.sightings.length < 3) return;
-    if (!angd.params) {
-      update = determine_params(angd.sightings);
-    } else {
-      update = assess_laps(angd.sightings, angd.params);
-    }
+    if (!angd.calcFunc) {
+      angd.sightings = check_revs(angd.sightings);
+    } 
 
-    // can we simply apply the update to angd (extend?)
-    angd.sightings = update.sightings;
-    angd.params = update.params;
+    //check_revs can delete sightings, so check
+    if (angd.sightings.length >= 3) {
+      // revs(t) = a*t^2 + b*t + c
+      Events.publish( 
+        'calculate_angD_params', 
+        {
+          "xyPairs": angd.sightings, 
+          "xname": "time",
+          "yname": "rev"
+        }
+      );
+      // Solver.solve will publish 'angD_func_updated' event
+    }
   }
 
 }
 
-function log_sighting(sightings, time) {
-  var n = sightings.length;
-  var rev = n;
-  if (n > 1) {
-    rev = sightings[n-1].rev + 1;
+function log_sighting(sightings, time, calcFunc) {
+  if (calcFunc){
+    rev = Math.round(calcFunc(time));
+  } else {
+    // No function, so guess.
+    var n = sightings.length;
+    var rev = n;
+    if (n > 1) {
+      rev = sightings[n-1].rev + 1;
+    }
   }
   var x = {"time": time, "rev": rev};
   sightings.push(x);
@@ -45,12 +66,9 @@ function log_sighting(sightings, time) {
 }
 
 // take the first three sightings and figure out
-// - the number of revolutions between sightings
-// - the paramters to convert time into revolutions
-// - revs(t) = a*t^2 + b*t + c
-function determine_params(sightings) {
+// the number of revolutions between sightings
+function check_revs(sightings) {
   var n = sightings.length;
-  var params;
 
   if (n < 3) console.log("weird: expected 3 sightings", n);
 
@@ -85,19 +103,7 @@ function determine_params(sightings) {
       sightings = reject_all_but_last(sightings);
     }
   }
-
-  if (sightings.length < 3) {
-    params = null;
-  } else {
-    // TODO: calc params
-    Solver.solve(sightings, "time", "rev");
-    params = null; //{"a": 1, "b": 2, "c": 3};
-  };
-  return {"sightings": sightings, "params": params};
-}
-
-function assess_laps(sightings) {
-
+  return sightings;
 }
 
 function get_lap_time(sightings, n) {

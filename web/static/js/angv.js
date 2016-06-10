@@ -62,6 +62,7 @@ export var AngV = {
       var self = this;
       return function () {
         Events.publish('test', "starting");
+        AngD.reset();
         self.stat = new StreamStat();
         self.startTime = self.vid.currentTime;
         if (self.showCharts) self.chart.reset();
