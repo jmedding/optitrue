@@ -8,6 +8,8 @@
 <canvas id="chart" width="640" height="50"></canvas>
 <canvas id="aoi" width="640" height="360"></canvas>
 
+<div id="debug"></div>
+
 
 <div class="row marketing">
   <div class="col-lg-6">

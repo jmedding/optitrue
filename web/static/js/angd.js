@@ -43,7 +43,7 @@ function handle_crossing(angd) {
           "yname": "rev"
         }
       );
-      // Solver.solve will publish 'angD_func_updated' event
+      // Solver will publish 'angD_func_updated' event
     }
   }
 

@@ -1,4 +1,5 @@
 import {AngV} from "web/static/js/angv";
+import {Events} from "web/static/js/events";
 
 
 export var Cam = {
@@ -41,7 +42,7 @@ export var Cam = {
       self.video.addEventListener('loadedmetadata', function(e){
         //console.log("metadata loaded", e);
         //alert("" + self.video.videoHeight + " x " + self.video.videoWidth);
-        AngV.init(self.video, self.guide.top, self.guide.left, self.guide.right, false, true)
+        AngV.init(self.video, self.guide, false, true)        
       });
     };
   },
@@ -127,13 +128,15 @@ function startRecording (self) {
     //alert("recording");
     var delay = 1000;
     self.paint_guide(self, self.svg, "yellow")
-    window.setTimeout(AngV.start(), delay);
+    //window.setTimeout(AngV.start(), delay);
+    window.setTimeout(Events.publish, delay, 'start', {});
     window.setTimeout(self.paint_guide, delay, self, self.svg, "green");
 }
 
 function stopRecording (self) {
   self.paint_guide(self, self.svg, "orange");
-  AngV.stop();
+  Events.publish('stop', {});
+  //AngV.stop();
   //alert("stop");
 }
  

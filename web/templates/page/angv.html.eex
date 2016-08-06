@@ -5,6 +5,7 @@
 
 <canvas id="chart" width="640" height="50"></canvas>
 <canvas id="aoi" width="640" height="360"></canvas>
+<div id="debug"></div>
 
 
 <div class="row marketing">
@@ -43,7 +44,7 @@
   var vid = document.getElementById('source'); 
   var Events = require("web/static/js/events").Events;
   var AngV = require("web/static/js/angv").AngV
-  AngV.init(vid, 0.5, 0.1, 0.8, false, true);
+  AngV.init(vid, {top:0.5, left: 0.1, right: 0.8}, false, true);
   vid.addEventListener('play', AngV.start());
   vid.addEventListener('stop', AngV.stop());
 </script>

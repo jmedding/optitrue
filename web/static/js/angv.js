@@ -2,6 +2,7 @@ import {StreamStat} from "web/static/js/stat2";
 import {Chart} from "web/static/js/chart";
 import {Events} from "web/static/js/events";
 import {AngD} from "web/static/js/angd";
+import {Measure} from "web/static/js/measure";
 
 export var AngV = {
   interval: null,
@@ -13,10 +14,11 @@ export var AngV = {
   aoiPosition: {top: 0.5, left: 0.47, right: 0.53, height: 0.02},
   tireRect: {"x": 0, "y": 0, "w": 0, "h": 0},  //to be updated
   startTime: null,
+  guide: null,
 
   // top, left, right describe the region in percentage where the wheel is expected to be
   // corresponding to the guideline drawn on the video
-  init: function(vid, top, left, right, debug, showCharts){
+  init: function(vid, guide, debug, showCharts){
     var self = this;
     var aoiCtx;
 
@@ -36,19 +38,20 @@ export var AngV = {
       //vidoe metadata not yet loaded
       self.vid.addEventListener('loadedmetadata', function(e){
         //console.log("metadata loaded", e);
-        self.init(vid, top, left, right, debug, showCharts);
+        self.init(vid, guide, debug, showCharts);
       });
       return      
     };
     
     AngD.init();
-
-    self.tireRect = rectangleFromVideoElement(vid, left, right, top);
+    self.guide = guide;
+    self.tireRect = rectangleFromVideoElement(vid, guide);
     self.aoi = findOrSetAoiCanvas(self);
     self.aoiRect.x = self.tireRect.x + self.tireRect.w * self.aoiPosition.left;
     self.aoiRect.y = self.tireRect.y + self.tireRect.h * self.aoiPosition.top;
     self.aoiRect.w = self.aoi.width;
     self.aoiRect.h = self.aoi.height;
+    self.measure = null;
 
     //console.log("showCharts", vid, top, left, right, debug, showCharts);
 
@@ -56,6 +59,8 @@ export var AngV = {
       document.getElementById('chart')
       .getContext('2d'), 30, 0.4, {"xOrigin": 'left', "yOrigin":'bottom', "line":false});
     //return self.interval = window.setInterval(self.run, self.frameRate * 1000, self, aoiCtx);
+    Events.subscribe('start', this.start());
+    Events.subscribe('stop', this.stop());
   },
 
   start: function () {
@@ -64,6 +69,7 @@ export var AngV = {
         Events.publish('test', "starting");
         AngD.reset();
         self.stat = new StreamStat();
+        self.measure = new Measure(self.vid, self.guide);
         self.startTime = self.vid.currentTime;
         if (self.showCharts) self.chart.reset();
         self.interval = window.setInterval(self.run, self.frameRate * 1000, self, self.aoi.getContext('2d'));
@@ -72,12 +78,18 @@ export var AngV = {
   },
 
   stop: function () {
-      window.clearInterval(this.interval);
-      this.interval = null;
+    var self = this;
+    return function () {
+      window.clearInterval(self.interval);
+      self.interval = null;
+    }
   },
 
   run: function (self, ctx) {
     if (self.lastFrameTime == self.vid.currentTime) return;
+    console.log("newFrame");
+    Events.publish('newFrame');
+
     if (self.debug) console.log("run", self.vid.currentTime);
     var val;
     
@@ -118,11 +130,12 @@ function  getBrightness (ctx) {
     return colorSum / (canvas.height*canvas.width);
   }
 
-function rectangleFromVideoElement (vid, left, right, top) {
+function rectangleFromVideoElement (vid, guide) {
+  // guide = {top:0.5, left: 0.2, right: 0.8}
   var rect = {};
-  rect.x = vid.videoWidth * left;
-  rect.y = vid.videoHeight * top;
-  rect.w = vid.videoWidth * (right - left);
+  rect.x = vid.videoWidth * guide.left;
+  rect.y = vid.videoHeight * guide.top;
+  rect.w = vid.videoWidth * (guide.right - guide.left);
   rect.h = vid.videoHeight - rect.y;
   return rect;
 }
