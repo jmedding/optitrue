@@ -21,6 +21,8 @@ defmodule Optitrue.Router do
     get "/", PageController, :index
     get "/angv", PageController, :angv
     get "/cam", PageController, :cam
+    get "/test", PageController, :test
+
   end
 
   # Other scopes may use custom stacks.

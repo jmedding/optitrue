@@ -12,4 +12,8 @@ defmodule Optitrue.PageController do
   def cam(conn, _params) do
     render conn, "cam.html"
   end
+
+  def test(conn, _params) do
+    render conn, "test.html"
+  end
 end

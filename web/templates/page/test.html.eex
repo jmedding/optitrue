@@ -1,0 +1,56 @@
+<video id="vid" poster="images/test1.png" width="640" height="320">
+  
+</video>
+
+<canvas id="test"></canvas>
+
+<canvas id="aoi"></canvas>
+
+<script>
+  var vid = document.getElementById('vid'); 
+  var test = document.getElementById('test');
+  var testCtx = test.getContext('2d');
+  vid.setAttribute("onClick", "step()")
+  console.log("vid", vid);
+
+//  var img1 = document.getElementById('img1'); 
+//  var img2 = document.getElementById('img2'); 
+//  var img3 = document.getElementById('img3'); 
+//  var can1 = document.getElementById('can1'); 
+//  var can2 = document.getElementById('can2'); 
+//  var can3 = document.getElementById('can3'); 
+//  var ctx1 = can1.getContext("2d");
+//  var ctx2 = can2.getContext("2d");
+//  var ctx3 = can3.getContext("2d");
+
+//  ctx1.drawImage(img1, 0, 0, 360, 160);
+//  ctx2.drawImage(img2, 0, 0, 360, 160);
+//  ctx3.drawImage(img3, 0, 0, 360, 160);
+
+  var Stabilizer = require("web/static/js/stabilizer").Stabilizer;
+  var stab = new Stabilizer(vid, {top:0.5, left: 0.2, right: 0.6})
+  console.log("Stabilizer", Stabilizer);
+  var i = 0;
+  var images = ["images/test1.png", "images/test2.png", "images/test3.png"]
+  window.setTimeout( start, 1000);
+
+  function start () {
+    console.log("starting");
+    testCtx.drawImage(vid, 0,0,360, 160);
+    stab.process();
+
+    
+  }
+
+  function step () {
+    i++
+    console.log("stepping", i%3);
+    vid.setAttribute("poster", images[i%3]);
+    stab.process();
+  }
+//  var Events = require("web/static/js/events").Events;
+//  var AngV = require("web/static/js/angv").AngV
+//  AngV.init(vid, {top:0.5, left: 0.1, right: 0.8}, false, true);
+
+
+</script>

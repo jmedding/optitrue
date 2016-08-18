@@ -3,9 +3,12 @@ import {Events} from "web/static/js/events";
 export var Stabilizer = function (vidElement, guideDimensions) {
   Events.subscribe('start', this.reset);
   this.vid = vidElement;
-  this.w = this.vid.videoWidth;
-  this.h = this.vid.videoHeight;
-  this.hcan = document.createElement('canvas'); //hidden canvas for background image processing
+  this.w = this.vid.videoWidth == 0 ? this.vid.clientWidth : this.vid.videoWidth;
+  this.h = this.vid.videoHeight == 0 ? this.vid.clientHeight : this.vid.videoHeight;
+  //console.log("w", this.w, this.h);
+
+  //hidden canvas for background image processing
+  this.hcan = document.createElement('canvas'); 
   this.hcan.width = this.w;
   this.hcan.height = this.h;
   this.hctx = this.hcan.getContext('2d');
@@ -19,7 +22,9 @@ export var Stabilizer = function (vidElement, guideDimensions) {
     "w": Math.round(this.w*(this.zone.left - this.zone.right)),
     "h": Math.round(this.h*this.zone.top / 2)
   }
-  this.aoiCan = document.createElement('canvas'); //hidden canvas to hold stabilized image
+
+  //hidden canvas to hold stabilized image
+  this.aoiCan = document.createElement('canvas'); 
   this.aoiCan.width = this.aoi.w;
   this.aoiCan.height = this.aoi.h;
   this.aoiCtx = this.aoiCan.getContext('2d');
@@ -46,7 +51,7 @@ Stabilizer.prototype.process = function(data) {
   var h = this.h;
   var imgData; 
   var blurRadius = 3;
-  var gray // greyscale pixels of full vid
+  var gray // grayscale pixels of full vid
   var corners;
   var descriptors;
   var bestMatches;
@@ -57,6 +62,8 @@ Stabilizer.prototype.process = function(data) {
 
   hctx.drawImage(this.vid, 0, 0, w, h, 0, 0, w, h);
   imgData = hctx.getImageData(0, 0, w, h);
+
+  console.log("imgData", imgData.data.slice(0,100));
   gray = tracking.Image.grayscale(
     tracking.Image.blur(imgData.data, w, h, blurRadius),
     w, h);
@@ -80,6 +87,7 @@ Stabilizer.prototype.process = function(data) {
 
   var a = affine(bestMatches);
   this.debugCtx.setTransform(a[0], a[3], a[1], a[4], a[2], a[5]);
+  console.log("hcan", hcan);
   this.debugCtx.drawImage(hcan, 0, 0, w,h,0,0, this.debugCan.width, this.debugCan.height);
   //this.aoiCtx.setTransform(a[0], a[3], a[1], a[4], a[2], a[5]);
   //this.aoiCtx.drawImage(hcan, aoi.x, aoi.y, aoi.w, aoi.h, 0, 0, aoi.w, aoi.h);
