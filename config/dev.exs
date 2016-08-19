@@ -41,8 +41,8 @@ config :phoenix, :stacktrace_depth, 20
 # Configure your database
 config :optitrue, Optitrue.Repo,
   adapter: Ecto.Adapters.Postgres,
-  username: "postgres",
-  password: "postgres",
+  username: "optitrue_dev",
+  password: "optitrue",
   database: "optitrue_dev",
   hostname: "localhost",
   pool_size: 10

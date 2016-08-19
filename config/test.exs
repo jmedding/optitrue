@@ -12,8 +12,8 @@ config :logger, level: :warn
 # Configure your database
 config :optitrue, Optitrue.Repo,
   adapter: Ecto.Adapters.Postgres,
-  username: "postgres",
-  password: "postgres",
+  username: "optitrue_test",
+  password: "optitrue",
   database: "optitrue_test",
   hostname: "localhost",
   pool: Ecto.Adapters.SQL.Sandbox
