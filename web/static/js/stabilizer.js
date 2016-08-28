@@ -43,27 +43,43 @@ Stabilizer.prototype.reset = function() {
   }
 };
 
-// returns a stabilized image in the area of interest (aoi), 
-Stabilizer.prototype.process = function(data) {
-
-  console.log("Stabilize-Process!");
+// Feed the process functoin with the video element (normally useage)
+Stabilizer.prototype.processVideo = function(data) {
   var w = this.w;
   var h = this.h;
   var imgData; 
+  this.hctx.drawImage(this.vid, 0, 0, w, h, 0, 0, w, h);
+  imgData = hctx.getImageData(0, 0, w, h);
+  var a = this.process(imgData);
+  this.debugCtx.setTransform(a[0], a[3], a[1], a[4], a[2], a[5]);
+  this.debugCtx.drawImage(hcan, 0, 0);//, w,h,0,0, this.debugCan.width, this.debugCan.height);
+  //this.aoiCtx.setTransform(a[0], a[3], a[1], a[4], a[2], a[5]);
+  //this.aoiCtx.drawImage(hcan, aoi.x, aoi.y, aoi.w, aoi.h, 0, 0, aoi.w, aoi.h);
+
+  if (1 ) plotMatches(this.debugCtx, bestMatches);
+};
+
+Stabilizer.prototype.processImage = function(first_argument) {
+  // body...
+};
+
+// returns a stabilized image in the area of interest (aoi), 
+Stabilizer.prototype.process = function(imgData) {
+
+  console.log("Stabilize-Process!");
+  console.log("imgData", imgData.data.slice(0,10));
+  var w = imgData.width;
+  var h = imgData.height;
   var blurRadius = 3;
   var gray // grayscale pixels of full vid
   var corners;
   var descriptors;
   var bestMatches;
-  var hctx = this.hctx;
-  var ctx = this.ctx;
+  //var ctx = this.ctx;
   var hcan = this.hcan;
   var aoi = this.aoi;
 
-  hctx.drawImage(this.vid, 0, 0, w, h, 0, 0, w, h);
-  imgData = hctx.getImageData(0, 0, w, h);
 
-  console.log("imgData", imgData.data.slice(0,100));
   gray = tracking.Image.grayscale(
     tracking.Image.blur(imgData.data, w, h, blurRadius),
     w, h);
@@ -83,16 +99,13 @@ Stabilizer.prototype.process = function(data) {
     corners, 
     descriptors)
     .sort(function(a, b) {return b.confidence - a.confidence;})
-    .slice(0,20);
+    .slice(0,30);
 
-  var a = affine(bestMatches);
-  this.debugCtx.setTransform(a[0], a[3], a[1], a[4], a[2], a[5]);
-  console.log("hcan", hcan);
-  this.debugCtx.drawImage(hcan, 0, 0, w,h,0,0, this.debugCan.width, this.debugCan.height);
-  //this.aoiCtx.setTransform(a[0], a[3], a[1], a[4], a[2], a[5]);
-  //this.aoiCtx.drawImage(hcan, aoi.x, aoi.y, aoi.w, aoi.h, 0, 0, aoi.w, aoi.h);
+  var transform = affine(bestMatches);
+  //console.log("transform", transform);
+  
 
-  if (true) plotMatches(this.debugCtx, bestMatches);
+  return transform;
 };
 
 var getCorners = function (grayPixels, w, h, zone) {
@@ -122,7 +135,12 @@ var filterCorners = function (corners, x, y, width) {
     return result;
 }
 
-var affine = function (matches) {
+export var affine = function (matches) {
+  var affine_transform = affine2d(matches);
+  return affine_transform.data.slice(0,6);
+}
+
+export var affine2d = function (matches) {
   var prior = [];
   var current = [];
   var count = matches.length;
@@ -133,10 +151,10 @@ var affine = function (matches) {
   var affine_kernel = new jsfeat.motion_model.affine2d();
   var affine_transform = new jsfeat.matrix_t(3, 3, jsfeat.F32_t | jsfeat.C1_t);
   affine_kernel.run(current, prior, affine_transform, count);
-  return affine_transform.data.slice(0,6);
+  return affine_transform;
 }
 
-var plotMatches = function (ctx, matches) {
+export function plotMatches (ctx, matches) {
   for (var i = 0; i < matches.length; i++) {
     //console.log("help", matches);
     drawVs(ctx, matches[i], 10, 5)
@@ -163,7 +181,7 @@ var drawTail = function (ctx, match, color = 'red', stroke_width = 1) {
 
 }
 
-var drawV = function (ctx, point, up, out, color) {
+export var drawV = function (ctx, point, up, out, color) {
   ctx.beginPath();
   ctx.strokeStyle = color;
   ctx.moveTo(point[0] - out, point[1] + up);

@@ -1,5 +1,6 @@
 import {Events} from "web/static/js/events";
 
+// This module is used to fit the angular velocty and deceleratoin parameters to the measured values
 export var Solver = {
   solve : function (xyPairs, xname, yname) {
     //xyPairs [{x,y}, {x,y}, {x,y}, ...]

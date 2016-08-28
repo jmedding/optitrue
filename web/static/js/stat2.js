@@ -1,3 +1,5 @@
+// Can update various statistics on the fly
+
 export var StreamStat = function () {
   this.sumX = 0;
   this.sumsq = 0;
@@ -7,6 +9,7 @@ export var StreamStat = function () {
   this.sumLast5 = 0;
   this.varianceFactor = 25;
 }
+
 
 StreamStat.prototype.outlier = function (val) {
   if (this.last5.length >= this.minPoints && this.check(val)) {

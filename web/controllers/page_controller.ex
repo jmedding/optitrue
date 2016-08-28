@@ -16,4 +16,8 @@ defmodule Optitrue.PageController do
   def test(conn, _params) do
     render conn, "test.html"
   end
+
+  def test1(conn, _params) do
+    render conn, "test1.html"
+  end
 end

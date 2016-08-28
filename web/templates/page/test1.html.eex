@@ -1,0 +1,175 @@
+<h1>First comparison</h1>
+Blue = original, Red = shifted, Orange = shifted & transformed
+ </br>
+<canvas id="base"    width="300" height="300"></canvas>
+<br>
+<h1>Camera moves even further</h1>
+Blue = original, Red = shifted, Green= last transform, Orange = fully transformed <br>
+<canvas id="second" width="300" height="300"></canvas>
+
+The fully transformed points demonstrate the solution of applying the last 
+transform to the new next image, then finding corners and then finding matches 
+to the base image. This assumes that the camera's POV shifts are continuous from one 
+frame to the next and that by applying the last known transform, we can remove the 
+long term drift and thus reduce the time needed to find matches because the features
+should be quite close to each other.
+
+<script>
+  var w = 300;
+  var h = 300;
+
+
+  var module = require("web/static/js/stabilizer");
+  var base = document.getElementById('base');
+  var second = document.getElementById('second');
+  var baseCtx = base.getContext('2d');
+  var secondCtx = second.getContext('2d');
+
+  var t1 = new jsfeat.matrix_t(3, 3, jsfeat.F32_t | jsfeat.C1_t);
+
+  var p1 = new jsfeat.matrix_t(1, 3, jsfeat.S32_t | jsfeat.C1_t);
+  var p2 = new jsfeat.matrix_t(1, 3, jsfeat.S32_t | jsfeat.C1_t);
+  var p3 = new jsfeat.matrix_t(1, 3, jsfeat.S32_t | jsfeat.C1_t);
+  var p4 = new jsfeat.matrix_t(1, 3, jsfeat.S32_t | jsfeat.C1_t);
+  var points = [p1, p2, p3, p4];
+
+  var p1s = new jsfeat.matrix_t(1, 3, jsfeat.S32_t | jsfeat.C1_t);
+  var p2s = new jsfeat.matrix_t(1, 3, jsfeat.S32_t | jsfeat.C1_t);
+  var p3s = new jsfeat.matrix_t(1, 3, jsfeat.S32_t | jsfeat.C1_t);
+  var p4s = new jsfeat.matrix_t(1, 3, jsfeat.S32_t | jsfeat.C1_t);
+  var shiftedPoints = [p1s, p2s, p3s, p4s];
+
+  var p1s2 = new jsfeat.matrix_t(1, 3, jsfeat.S32_t | jsfeat.C1_t);
+  var p2s2 = new jsfeat.matrix_t(1, 3, jsfeat.S32_t | jsfeat.C1_t);
+  var p3s2 = new jsfeat.matrix_t(1, 3, jsfeat.S32_t | jsfeat.C1_t);
+  var p4s2 = new jsfeat.matrix_t(1, 3, jsfeat.S32_t | jsfeat.C1_t);
+  var shifted2Points = [p1s2, p2s2, p3s2, p4s2];
+
+  var p1u2 = new jsfeat.matrix_t(1, 3, jsfeat.S32_t | jsfeat.C1_t);
+  var p2u2 = new jsfeat.matrix_t(1, 3, jsfeat.S32_t | jsfeat.C1_t);
+  var p3u2 = new jsfeat.matrix_t(1, 3, jsfeat.S32_t | jsfeat.C1_t);
+  var p4u2 = new jsfeat.matrix_t(1, 3, jsfeat.S32_t | jsfeat.C1_t);
+  var unshifted2Points = [p1u2, p2u2, p3u2, p4u2];
+
+  p1.data[0] = 20;
+  p1.data[1] = 20;
+  p1.data[2] = 1;
+
+  p2.data[0] = 20;
+  p2.data[1] = 150;
+  p2.data[2] = 1;
+
+  p3.data[0] = 150;
+  p3.data[1] = 150;
+  p3.data[2] = 1;
+
+  p4.data[0] = 150;
+  p4.data[1] = 20;
+  p4.data[2] = 1;
+
+  plotPoints(points, baseCtx);
+
+  t1.data[8] = 1    //Always 1
+  t1.data[0] = 1.2  //horizontal scaling
+  t1.data[4] = 1.0  //vertical scaling
+  t1.data[5] = 9.0  //vertical moving
+  t1.data[1] = 0.2  //vertical skewing
+  t1.data[2] = -5   //horiozontal moving
+
+  jsfeat.matmath.multiply(p1s, t1, p1);
+  jsfeat.matmath.multiply(p2s, t1, p2);
+  jsfeat.matmath.multiply(p3s, t1, p3);
+  jsfeat.matmath.multiply(p4s, t1, p4);
+
+  plotPoints(shiftedPoints, baseCtx, 'red');
+
+  var ta = module.affine2d(buildMatches(points, shiftedPoints));
+  var a = ta.data.slice(0,6); //affine coefficients
+  baseCtx.transform(a[0], a[3], a[1], a[4], a[2], a[5]);
+  plotPoints(shiftedPoints, baseCtx, 'orange');
+
+//  Ok now we see that the CSS transform has properly aligned the first offset
+
+// Lets ofset the points even further, simulating the the camera has move a bit
+// from the last position
+
+  t1.data[0] = 1.0  //horizontal scaling
+  t1.data[4] = 1.0  //vertical scaling
+  t1.data[5] = 2.0  //vertical moving
+  t1.data[1] = 0.1 //vertical skewing
+  t1.data[2] = -6.0   //horiozontal moving
+
+  jsfeat.matmath.multiply(p1s2, t1, p1s);
+  jsfeat.matmath.multiply(p2s2, t1, p2s);
+  jsfeat.matmath.multiply(p3s2, t1, p3s);
+  jsfeat.matmath.multiply(p4s2, t1, p4s);  
+
+  //plotPoints(affinedPoints, baseCtx, 'orange');
+  plotPoints(points, secondCtx);
+  plotPoints(shifted2Points, secondCtx, 'red');
+  secondCtx.transform(a[0], a[3], a[1], a[4], a[2], a[5]);
+  plotPoints(shifted2Points, secondCtx, 'green');
+
+  takeCssTransform(secondCtx, t1);
+
+  jsfeat.matmath.multiply(p1u2, t1, p1);
+  jsfeat.matmath.multiply(p2u2, t1, p2);
+  jsfeat.matmath.multiply(p3u2, t1, p3);
+  jsfeat.matmath.multiply(p4u2, t1, p4); 
+
+  // Uncomment the next two lines to verify that the unshifted points
+  // are correctly calculated (the shoudl be land in the same positoin as the p_s2 points)
+  //secondCtx.resetTransform();
+  //plotPoints(unshifted2Points, secondCtx, 'orange');
+
+  var ta = module.affine2d(buildMatches(points, unshifted2Points));
+  var a = ta.data.slice(0,6); //affine coefficients
+  baseCtx.transform(a[0], a[3], a[1], a[4], a[2], a[5]);
+  plotPoints(shiftedPoints, secondCtx, 'orange');
+
+  console.log("t1", t1.data);
+  console.log("p1", p1);
+  console.log("p1s", p1s);
+  console.log("transform", a);
+  console.log("unshifted2 Points", unshifted2Points);
+
+  function plotPoints(points, ctx, color = 'blue') {
+    for (let p of points){
+      plotPoint(p, ctx, color);
+    }
+  };
+
+  function plotPoint(p, ctx, color = 'blue') {
+    point = [p.data[0], p.data[1]];
+    var h = color == 'orange' ? -10 : 10;
+    module.drawV(ctx, point, h, 3, color);
+  }
+
+  // create a match object for points a and b
+  function match (a, b) {
+    return {keypoint1: [a.data[0], a.data[1]], keypoint2: [b.data[0], b.data[1]]}
+  }
+
+  function buildMatches (original, current) {
+    // original and current are same length arrays of points
+    var matches = [];
+    for (var i = original.length - 1; i >= 0; i--) {
+      matches[i] = match(original[i], current[i]);
+    }
+    console.log("matches", matches);
+    return matches;
+  }
+
+  function takeCssTransform(ctx, jsFeatMatrix) {
+    var cssTransform = ctx.mozCurrentTransform;
+
+    console.log("cssTransform", cssTransform);
+    jsFeatMatrix[0] = cssTransform.a;
+    jsFeatMatrix[1] = cssTransform.c;
+    jsFeatMatrix[2] = cssTransform.e;
+    jsFeatMatrix[3] = cssTransform.b;
+    jsFeatMatrix[4] = cssTransform.d;
+    jsFeatMatrix[5] = cssTransform.f;
+  }
+
+</script>

@@ -22,6 +22,7 @@ defmodule Optitrue.Router do
     get "/angv", PageController, :angv
     get "/cam", PageController, :cam
     get "/test", PageController, :test
+    get "/test1", PageController, :test1
 
   end
 

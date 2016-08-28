@@ -17,6 +17,6 @@ export var Measure = function (vidElement, guide, debug=true) {
 Measure.prototype.run = function() {
   var self = this;
   return function (data) {
-    self.stabilizer.process(data);
+    self.stabilizer.processVideo(data);
   }
 };

@@ -2,16 +2,36 @@
   
 </video>
 
-<canvas id="test"></canvas>
 
-<canvas id="aoi"></canvas>
+<img id="input" src="images/test1.png" width="720">
+
+<canvas id="test" width="720" height="360"></canvas>
+
+<canvas id="aoi" width="720" height="360"></canvas>
+<img src="images/test1.png" width="720" >
 
 <script>
+  var w = 720;
+  var h = 360;
+
+  images = ["images/test1.png", "images/test2.png", "images/test3.png"]
+  i = 0;
+
   var vid = document.getElementById('vid'); 
-  var test = document.getElementById('test');
+  var Stabilizer = require("web/static/js/stabilizer").Stabilizer;
+  var stab = new Stabilizer(vid, {top:0.5, left: 0.2, right: 0.6});
   var testCtx = test.getContext('2d');
-  vid.setAttribute("onClick", "step()")
-  console.log("vid", vid);
+  var aoi = document.getElementById('aoi');
+  var aoiCtx = aoi.getContext('2d');
+  console.log("testCtx", testCtx);
+
+(function wrapper () {
+
+  
+  //var test = document.getElementById('test');
+  //var input = document.getElementById('input');
+
+  input.setAttribute("onClick", "step()")
 
 //  var img1 = document.getElementById('img1'); 
 //  var img2 = document.getElementById('img2'); 
@@ -26,31 +46,31 @@
 //  ctx1.drawImage(img1, 0, 0, 360, 160);
 //  ctx2.drawImage(img2, 0, 0, 360, 160);
 //  ctx3.drawImage(img3, 0, 0, 360, 160);
-
-  var Stabilizer = require("web/static/js/stabilizer").Stabilizer;
-  var stab = new Stabilizer(vid, {top:0.5, left: 0.2, right: 0.6})
   console.log("Stabilizer", Stabilizer);
-  var i = 0;
-  var images = ["images/test1.png", "images/test2.png", "images/test3.png"]
   window.setTimeout( start, 1000);
 
   function start () {
     console.log("starting");
-    testCtx.drawImage(vid, 0,0,360, 160);
-    stab.process();
+    testCtx.drawImage(input, 0,0, w, h);
+    stab.process(testCtx.getImageData(0,0, w, h));
 
     
   }
 
-  function step () {
-    i++
-    console.log("stepping", i%3);
-    vid.setAttribute("poster", images[i%3]);
-    stab.process();
-  }
 //  var Events = require("web/static/js/events").Events;
 //  var AngV = require("web/static/js/angv").AngV
 //  AngV.init(vid, {top:0.5, left: 0.1, right: 0.8}, false, true);
+})()
 
+  function step () {
+    i++
+    console.log("stepping", i%3);
+    input.setAttribute("src", images[i%3]);
+    testCtx.drawImage(input, 0,0, w, h);
+    var a = stab.process(testCtx.getImageData(0,0, w, h));
+    console.log("transform", a);
+    this.aoiCtx.setTransform(a[0], a[3], a[1], a[4], a[2], a[5]);
+    this.aoiCtx.drawImage(test, 0, 0);
+  }
 
 </script>
