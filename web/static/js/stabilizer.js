@@ -48,9 +48,13 @@ Stabilizer.prototype.processVideo = function(data) {
   var w = this.w;
   var h = this.h;
   var imgData; 
+  // hctx has last transform applied so the video will be partiall stabilized
   this.hctx.drawImage(this.vid, 0, 0, w, h, 0, 0, w, h);
   imgData = hctx.getImageData(0, 0, w, h);
   var a = this.process(imgData);
+  // Apply transform to next frame to correct for long term camera POV drift
+  this.hctx.transform(a[0], a[3], a[1], a[4], a[2], a[5]); 
+
   this.debugCtx.setTransform(a[0], a[3], a[1], a[4], a[2], a[5]);
   this.debugCtx.drawImage(hcan, 0, 0);//, w,h,0,0, this.debugCan.width, this.debugCan.height);
   //this.aoiCtx.setTransform(a[0], a[3], a[1], a[4], a[2], a[5]);

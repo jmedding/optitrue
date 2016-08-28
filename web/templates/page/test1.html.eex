@@ -1,11 +1,12 @@
 <h1>First comparison</h1>
 Blue = original, Red = shifted, Orange = shifted & transformed
  </br>
-<canvas id="base"    width="300" height="300"></canvas>
+<canvas id="base"    width="200" height="200"></canvas>
 <br>
 <h1>Camera moves even further</h1>
 Blue = original, Red = shifted, Green= last transform, Orange = fully transformed <br>
-<canvas id="second" width="300" height="300"></canvas>
+<canvas id="second" width="200" height="200"></canvas>
+<br>
 
 The fully transformed points demonstrate the solution of applying the last 
 transform to the new next image, then finding corners and then finding matches 
@@ -15,8 +16,8 @@ long term drift and thus reduce the time needed to find matches because the feat
 should be quite close to each other.
 
 <script>
-  var w = 300;
-  var h = 300;
+  var w = 200;
+  var h = 200;
 
 
   var module = require("web/static/js/stabilizer");
@@ -27,45 +28,26 @@ should be quite close to each other.
 
   var t1 = new jsfeat.matrix_t(3, 3, jsfeat.F32_t | jsfeat.C1_t);
 
-  var p1 = new jsfeat.matrix_t(1, 3, jsfeat.S32_t | jsfeat.C1_t);
-  var p2 = new jsfeat.matrix_t(1, 3, jsfeat.S32_t | jsfeat.C1_t);
-  var p3 = new jsfeat.matrix_t(1, 3, jsfeat.S32_t | jsfeat.C1_t);
-  var p4 = new jsfeat.matrix_t(1, 3, jsfeat.S32_t | jsfeat.C1_t);
-  var points = [p1, p2, p3, p4];
+  var points = pointset(4);
+  var shiftedPoints = pointset(4);
+  var shifted2Points = pointset(4);
+  var unshifted2Points = pointset(4);
 
-  var p1s = new jsfeat.matrix_t(1, 3, jsfeat.S32_t | jsfeat.C1_t);
-  var p2s = new jsfeat.matrix_t(1, 3, jsfeat.S32_t | jsfeat.C1_t);
-  var p3s = new jsfeat.matrix_t(1, 3, jsfeat.S32_t | jsfeat.C1_t);
-  var p4s = new jsfeat.matrix_t(1, 3, jsfeat.S32_t | jsfeat.C1_t);
-  var shiftedPoints = [p1s, p2s, p3s, p4s];
+  points[0].data[0] = 20;
+  points[0].data[1] = 20;
+  points[0].data[2] = 1;
 
-  var p1s2 = new jsfeat.matrix_t(1, 3, jsfeat.S32_t | jsfeat.C1_t);
-  var p2s2 = new jsfeat.matrix_t(1, 3, jsfeat.S32_t | jsfeat.C1_t);
-  var p3s2 = new jsfeat.matrix_t(1, 3, jsfeat.S32_t | jsfeat.C1_t);
-  var p4s2 = new jsfeat.matrix_t(1, 3, jsfeat.S32_t | jsfeat.C1_t);
-  var shifted2Points = [p1s2, p2s2, p3s2, p4s2];
+  points[1].data[0] = 20;
+  points[1].data[1] = 150;
+  points[1].data[2] = 1;
 
-  var p1u2 = new jsfeat.matrix_t(1, 3, jsfeat.S32_t | jsfeat.C1_t);
-  var p2u2 = new jsfeat.matrix_t(1, 3, jsfeat.S32_t | jsfeat.C1_t);
-  var p3u2 = new jsfeat.matrix_t(1, 3, jsfeat.S32_t | jsfeat.C1_t);
-  var p4u2 = new jsfeat.matrix_t(1, 3, jsfeat.S32_t | jsfeat.C1_t);
-  var unshifted2Points = [p1u2, p2u2, p3u2, p4u2];
+  points[2].data[0] = 150;
+  points[2].data[1] = 150;
+  points[2].data[2] = 1;
 
-  p1.data[0] = 20;
-  p1.data[1] = 20;
-  p1.data[2] = 1;
-
-  p2.data[0] = 20;
-  p2.data[1] = 150;
-  p2.data[2] = 1;
-
-  p3.data[0] = 150;
-  p3.data[1] = 150;
-  p3.data[2] = 1;
-
-  p4.data[0] = 150;
-  p4.data[1] = 20;
-  p4.data[2] = 1;
+  points[3].data[0] = 150;
+  points[3].data[1] = 20;
+  points[3].data[2] = 1;
 
   plotPoints(points, baseCtx);
 
@@ -76,11 +58,7 @@ should be quite close to each other.
   t1.data[1] = 0.2  //vertical skewing
   t1.data[2] = -5   //horiozontal moving
 
-  jsfeat.matmath.multiply(p1s, t1, p1);
-  jsfeat.matmath.multiply(p2s, t1, p2);
-  jsfeat.matmath.multiply(p3s, t1, p3);
-  jsfeat.matmath.multiply(p4s, t1, p4);
-
+  applyAffineTransform(points, t1, shiftedPoints);
   plotPoints(shiftedPoints, baseCtx, 'red');
 
   var ta = module.affine2d(buildMatches(points, shiftedPoints));
@@ -99,12 +77,8 @@ should be quite close to each other.
   t1.data[1] = 0.1 //vertical skewing
   t1.data[2] = -6.0   //horiozontal moving
 
-  jsfeat.matmath.multiply(p1s2, t1, p1s);
-  jsfeat.matmath.multiply(p2s2, t1, p2s);
-  jsfeat.matmath.multiply(p3s2, t1, p3s);
-  jsfeat.matmath.multiply(p4s2, t1, p4s);  
+  applyAffineTransform(shiftedPoints, t1, shifted2Points);
 
-  //plotPoints(affinedPoints, baseCtx, 'orange');
   plotPoints(points, secondCtx);
   plotPoints(shifted2Points, secondCtx, 'red');
   secondCtx.transform(a[0], a[3], a[1], a[4], a[2], a[5]);
@@ -112,10 +86,7 @@ should be quite close to each other.
 
   takeCssTransform(secondCtx, t1);
 
-  jsfeat.matmath.multiply(p1u2, t1, p1);
-  jsfeat.matmath.multiply(p2u2, t1, p2);
-  jsfeat.matmath.multiply(p3u2, t1, p3);
-  jsfeat.matmath.multiply(p4u2, t1, p4); 
+  applyAffineTransform(points, t1, unshifted2Points);
 
   // Uncomment the next two lines to verify that the unshifted points
   // are correctly calculated (the shoudl be land in the same positoin as the p_s2 points)
@@ -128,8 +99,8 @@ should be quite close to each other.
   plotPoints(shiftedPoints, secondCtx, 'orange');
 
   console.log("t1", t1.data);
-  console.log("p1", p1);
-  console.log("p1s", p1s);
+  console.log("p1", points[0]);
+  console.log("p1s", shiftedPoints[0]);
   console.log("transform", a);
   console.log("unshifted2 Points", unshifted2Points);
 
@@ -170,6 +141,20 @@ should be quite close to each other.
     jsFeatMatrix[3] = cssTransform.b;
     jsFeatMatrix[4] = cssTransform.d;
     jsFeatMatrix[5] = cssTransform.f;
+  }
+
+  function pointset (n) {
+    var set = [];
+    for (var i = n - 1; i >= 0; i--) {
+      set.push( new jsfeat.matrix_t(1, 3, jsfeat.S32_t | jsfeat.C1_t) );
+    }
+    return set;
+  }
+
+  function applyAffineTransform(orig, transformMatrix, result) {
+    for (var i = orig.length - 1; i >= 0; i--) {
+      jsfeat.matmath.multiply(result[i], transformMatrix, orig[i]);
+    }
   }
 
 </script>
